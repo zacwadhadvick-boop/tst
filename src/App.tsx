@@ -15,7 +15,9 @@ import { cn } from './lib/utils';
 import { registerSW } from 'virtual:pwa-register';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('vastrabill_auth') === 'true';
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -28,7 +30,12 @@ export default function App() {
 
     // Register PWA service worker safely
     try {
-      registerSW({ immediate: true });
+      registerSW({ 
+        immediate: true,
+        onOfflineReady() {
+          console.log('App ready for offline use');
+        }
+      });
     } catch (e) {
       console.warn('PWA registration error', e);
     }
@@ -40,10 +47,12 @@ export default function App() {
   }, []);
 
   const handleLogin = () => {
+    localStorage.setItem('vastrabill_auth', 'true');
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('vastrabill_auth');
     setIsAuthenticated(false);
   };
 

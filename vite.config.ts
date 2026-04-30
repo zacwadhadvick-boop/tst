@@ -12,6 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
           name: 'VastraBill Pro',
           short_name: 'VastraBill',
@@ -19,12 +20,37 @@ export default defineConfig(({mode}) => {
           theme_color: '#1E3A8A',
           background_color: '#F3F4F6',
           display: 'standalone',
+          orientation: 'portrait',
           icons: [
+            {
+              src: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
             {
               src: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            }
+          ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365 // <--- 365 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         }

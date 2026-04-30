@@ -184,5 +184,3 @@ export const Customers: React.FC = () => {
     </div>
   );
 };
-
-const cn = (...classes: string[]) => classes.filter(Boolean).join(' ');
