@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MoreVertical, LayoutGrid, List, Package } from 'lucide-react';
+import { Search, Plus, Filter, MoreVertical, LayoutGrid, List, Package, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { SIZES } from '../constants';
 import { cn, formatCurrency } from '../lib/utils';
 import { Product, Size } from '../types';
 import { storage } from '../lib/storage';
+import { exportToExcel, exportToPDF } from '../lib/export';
 
 export const Inventory: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     brand: '',
@@ -30,6 +32,31 @@ export const Inventory: React.FC = () => {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  const handleExportExcel = () => {
+    const data = products.map(p => ({
+      Name: p.name,
+      Brand: p.brand,
+      SKU: p.sku,
+      Price: p.sellingPrice,
+      'Total Stock': Object.values(p.stock).reduce((a, b) => (Number(a)||0) + (Number(b)||0), 0)
+    }));
+    exportToExcel(data, 'Inventory_Stock');
+    setShowExportOptions(false);
+  };
+
+  const handleExportPDF = () => {
+    const headers = ['Product Name', 'Brand', 'SKU', 'Price', 'Total Stock'];
+    const rows = products.map(p => [
+      p.name,
+      p.brand,
+      p.sku,
+      formatCurrency(p.sellingPrice),
+      Object.values(p.stock).reduce((a, b) => (Number(a)||0) + (Number(b)||0), 0)
+    ]);
+    exportToPDF(headers, rows, 'Inventory_Stock', 'Stock Inventory Report');
+    setShowExportOptions(false);
+  };
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,20 +131,42 @@ export const Inventory: React.FC = () => {
           </div>
         </div>
       )}
-
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">Stock Inventory</h1>
           <p className="text-gray-500 mt-1">Manage size-wise and color-wise clothing stock</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-            <Filter size={18} className="text-gray-400" />
-            Filters
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportOptions(!showExportOptions)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+            >
+              <Download size={18} className="text-gray-400" />
+              Export
+            </button>
+            {showExportOptions && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <button 
+                  onClick={handleExportPDF}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
+                >
+                  <FileText size={16} className="text-red-500" />
+                  Download PDF
+                </button>
+                <button 
+                  onClick={handleExportExcel}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
+                >
+                  <FileSpreadsheet size={16} className="text-emerald-500" />
+                  Download Excel
+                </button>
+              </div>
+            )}
+          </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
           >
             <Plus size={18} />
             New Product

@@ -19,6 +19,8 @@ import { Product, Size, SaleItem, Customer, Sale } from '../types';
 import { storage } from '../lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 
+import { exportToPDF } from '../lib/export';
+
 export const Billing: React.FC = () => {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -27,6 +29,36 @@ export const Billing: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handlePrint = () => {
+    if (!selectedCustomer || items.length === 0) return;
+    
+    const headers = ['Product', 'Sizes & Qty', 'Rate', 'Total'];
+    const rows = items.map(item => {
+      const qties = Object.entries(item.sizeQuantities)
+        .filter(([_, qty]) => (Number(qty) || 0) > 0)
+        .map(([size, qty]) => `${size}:${qty}`)
+        .join(', ');
+      
+      return [
+        item.productName,
+        qties,
+        formatCurrency(item.price),
+        formatCurrency(item.total)
+      ];
+    });
+
+    rows.push(['', '', 'Subtotal', formatCurrency(subTotal)]);
+    rows.push(['', '', 'GST (5%)', formatCurrency(tax)]);
+    rows.push(['', '', 'Grand Total', formatCurrency(grandTotal)]);
+
+    exportToPDF(
+      headers, 
+      rows, 
+      `Bill_${selectedCustomer.name.replace(/\s/g, '_')}`, 
+      `Tax Invoice - ${selectedCustomer.name}`
+    );
+  };
 
   useEffect(() => {
     const prods = storage.getProducts();
@@ -286,7 +318,10 @@ export const Billing: React.FC = () => {
              </div>
 
              <div className="grid grid-cols-2 gap-4">
-                <button className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-wider group">
+                <button 
+                  onClick={handlePrint}
+                  className="flex flex-col items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-wider group"
+                >
                    <Printer size={20} className="text-gray-400 group-hover:text-white transition-colors" />
                    Print Bill
                 </button>

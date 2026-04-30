@@ -1,5 +1,5 @@
 
-import { Product, Customer, Sale } from '../types';
+import { Product, Customer, Sale, Size } from '../types';
 import { MOCK_PRODUCTS, MOCK_CUSTOMERS } from '../constants';
 
 const STORAGE_KEYS = {
@@ -40,5 +40,36 @@ export const storage = {
   saveSale: (sale: Sale) => {
     const sales = storage.getSales();
     localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify([...sales, sale]));
+
+    // Deduct stock after sale if it's a real sale
+    const products = storage.getProducts();
+    const updatedProducts = products.map(p => {
+      const saleItem = sale.items.find(item => item.productId === p.id);
+      if (saleItem) {
+        const newStock = { ...p.stock };
+        Object.entries(saleItem.sizeQuantities).forEach(([size, qty]) => {
+          newStock[size as Size] = Math.max(0, (newStock[size as Size] || 0) - (Number(qty) || 0));
+        });
+        return { ...p, stock: newStock };
+      }
+      return p;
+    });
+    storage.saveProducts(updatedProducts);
+  },
+
+  // Stock Purchase/Receipt handling
+  addStock: (productId: string, sizeQuantities: Record<string, number>) => {
+    const products = storage.getProducts();
+    const updatedProducts = products.map(p => {
+      if (p.id === productId) {
+        const newStock = { ...p.stock };
+        Object.entries(sizeQuantities).forEach(([size, qty]) => {
+          newStock[size as Size] = (newStock[size as Size] || 0) + (Number(qty) || 0);
+        });
+        return { ...p, stock: newStock };
+      }
+      return p;
+    });
+    storage.saveProducts(updatedProducts);
   }
 };

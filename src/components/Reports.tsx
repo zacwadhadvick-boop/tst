@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
-import { BarChart3, TrendingUp, Users, Package } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Package, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { exportToExcel, exportToPDF } from '../lib/export';
+import { storage } from '../lib/storage';
 
 const DATA = [
   { month: 'Jan', sales: 4000, profit: 2400 },
@@ -13,11 +15,58 @@ const DATA = [
 ];
 
 export const Reports: React.FC = () => {
+  const [showExportOptions, setShowExportOptions] = useState(false);
+
+  const handleExportSales = (type: 'pdf' | 'excel') => {
+    const sales = storage.getSales();
+    if (type === 'excel') {
+      const data = sales.map(s => ({
+        Invoice: s.invoiceNumber,
+        Customer: s.customerName,
+        Date: new Date(s.date).toLocaleDateString(),
+        Total: s.grandTotal,
+        Status: s.paymentStatus
+      }));
+      exportToExcel(data, 'Sales_Report');
+    } else {
+      const headers = ['Invoice', 'Customer', 'Date', 'Total', 'Status'];
+      const rows = sales.map(s => [
+        s.invoiceNumber,
+        s.customerName,
+        new Date(s.date).toLocaleDateString(),
+        formatCurrency(s.grandTotal),
+        s.paymentStatus
+      ]);
+      exportToPDF(headers, rows, 'Sales_Report', 'Monthly Sales Report');
+    }
+    setShowExportOptions(false);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Business Analytics</h1>
-        <p className="text-gray-500 mt-1">Deep insights into brand performance and sales trends</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Business Analytics</h1>
+          <p className="text-gray-500 mt-1">Deep insights into brand performance and sales trends</p>
+        </div>
+        <div className="relative">
+          <button 
+            onClick={() => setShowExportOptions(!showExportOptions)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/20 hover:bg-blue-700"
+          >
+            <Download size={18} /> Export All Data
+          </button>
+          {showExportOptions && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden">
+              <button onClick={() => handleExportSales('pdf')} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700">
+                <FileText size={16} className="text-red-500" /> Download PDF
+              </button>
+              <button onClick={() => handleExportSales('excel')} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700">
+                <FileSpreadsheet size={16} className="text-emerald-500" /> Download Excel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
