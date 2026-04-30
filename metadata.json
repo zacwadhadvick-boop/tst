@@ -1,0 +1,6 @@
+{
+  "name": "VastraBill Pro",
+  "description": "Enterprise-grade garment wholesale management software featuring bulk inventory tracking, size-matrix billing, and AI sales forecasting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI-powered Forecasting", "Bulk Inventory Management", "Wholesale Billing Engine"]
+}
